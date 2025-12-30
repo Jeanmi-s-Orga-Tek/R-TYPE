@@ -693,10 +693,10 @@ void GameManager::handleMouseClick(sf::Event& event, sf::RenderWindow& window) {
         }
     } else if (currentState == State::SETTINGS) {
         if (backButton.isClicked(mousePos)) {
-            if (isConnected == ServerState::CONNECT) {
-                currentState = State::MENU;
-            } else if (isConnected == ServerState::DISCONNECT) {
+            if (isConnected == ServerState::DISCONNECT) {
                 currentState = State::ERRORSERVER;
+            } else {
+                currentState = State::MENU;
             }
             updateStatusTextPosition(false);
             statusText.setString("");
