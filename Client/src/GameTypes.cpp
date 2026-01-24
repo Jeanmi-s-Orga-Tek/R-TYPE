@@ -124,7 +124,7 @@ GameManager::GameManager(Engine::Utils::Vec2UInt windowSize, const std::string &
     rightButtonSelection = Button(sf::Vector2f(mid_window_x - 50, windowSize.y + 50), sf::Vector2f(100, 40), ">", font);
     applyButtonLocker = Button(sf::Vector2f(mid_window_x - 50, windowSize.y - 200), sf::Vector2f(100, 40), "Apply", font);
 
-    // leaderboard = Button(sf::Vector2f(mid_window_x - 350, windowSize.y - 100), sf::Vector2f(200, 50), "Leaderboard", font);
+    leaderboard = Button(sf::Vector2f(mid_window_x - 350, windowSize.y - 100), sf::Vector2f(200, 50), "Leaderboard", font);
     editorButton = Button(sf::Vector2f(mid_window_x - 120, windowSize.y - 100), sf::Vector2f(200, 50), "Editor", font);
     trophy.leaderboardRectangle.setSize(sf::Vector2f(mid_window_x, mid_window_y + 150));
     trophy.leaderboardRectangle.setPosition(sf::Vector2f(mid_window_x - 200, mid_window_y - 200));
@@ -255,8 +255,8 @@ void GameManager::updatePositions(Engine::Utils::Vec2UInt windowSize)
                                                sf::Vector2f(100, 40));
     applyButtonLocker.updatePositionAndSize(sf::Vector2f(mid_window_y - 50, windowSize.y - 100),
                                             sf::Vector2f(100, 40));
-    // leaderboard.updatePositionAndSize(sf::Vector2f(50,  100),
-    //                                         sf::Vector2f(125, 40));
+    leaderboard.updatePositionAndSize(sf::Vector2f(50,  100),
+                                            sf::Vector2f(125, 40));
     editorButton.updatePositionAndSize(sf::Vector2f(50, 160),
                                             sf::Vector2f(125, 40));
     trophy.leaderboardRectangle.setPosition(sf::Vector2f(mid_window_x - 200,mid_window_y - 200));
@@ -433,7 +433,7 @@ void GameManager::render(sf::RenderWindow& window) {
     } else if (currentState == State::MENU) {
         paramButton.updatePositionAndSize(sf::Vector2f(50, window.getSize().y - 100), sf::Vector2f(125, 40));
         paramButton.draw(window);
-        // leaderboard.draw(window);
+        leaderboard.draw(window);
         editorButton.draw(window);
         if (isChooseMode) {
             soloButton.draw(window);
@@ -485,6 +485,7 @@ void GameManager::render(sf::RenderWindow& window) {
         }
     } else if (currentState == State::LEADERBOARD) {
         trophy.draw(window);
+        backButton.draw(window);
     } else if (currentState == State::GAME) {
         if (networkManager && isConnected == ServerState::CONNECT) {
             gameDemo(window);
@@ -576,7 +577,7 @@ void GameManager::activateEditor(sf::RenderWindow& window)
     statusText.setString("");
     statusText.setFillColor(sf::Color::Yellow);
     paramButton.setHovered(false);
-    // leaderboard.setHovered(false);
+    leaderboard.setHovered(false);
     editorButton.setHovered(false);
 }
 
@@ -650,11 +651,12 @@ void GameManager::handleMouseClick(sf::Event& event, sf::RenderWindow& window) {
         } else {
             isChooseMode = false;
         }
-        // if (leaderboard.isClicked(mousePos)) {
-        //     currentState = State::LEADERBOARD;
-        //     updateStatusTextPosition(true);
-        //     statusText.setString("");
-        // }
+        if (leaderboard.isClicked(mousePos)) {
+            currentState = State::LEADERBOARD;
+            trophy.loadScores();
+            updateStatusTextPosition(true);
+            statusText.setString("");
+        }
         if (editorButton.isClicked(mousePos)) {
             #ifndef _WIN32
             activateEditor(window);
@@ -736,6 +738,12 @@ void GameManager::handleMouseClick(sf::Event& event, sf::RenderWindow& window) {
         if (backButton.isClicked(mousePos)) {
             currentState = State::SETTINGS;
         }
+    } else if (currentState == State::LEADERBOARD) {
+        if (backButton.isClicked(mousePos)) {
+            currentState = State::MENU;
+            updateStatusTextPosition(false);
+            statusText.setString("");
+        }
     } else if (currentState == State::LOCKER) {
         if (applyButtonLocker.isClicked(mousePos)) {
             currentState = State::MENU;
@@ -784,7 +792,7 @@ void GameManager::handleMouseMove(sf::RenderWindow& window)
             trioButton.setHovered(trioButton.isClicked(mousePos));
             squadButton.setHovered(squadButton.isClicked(mousePos));
         }
-        // leaderboard.setHovered(leaderboard.isClicked(mousePos));
+        leaderboard.setHovered(leaderboard.isClicked(mousePos));
         lockerButton.setHovered(lockerButton.isClicked(mousePos));
         modeButton.setHovered(modeButton.isClicked(mousePos));
         playButton.setHovered(playButton.isClicked(mousePos));
@@ -802,6 +810,8 @@ void GameManager::handleMouseMove(sf::RenderWindow& window)
         leftButtonSelection.setHovered(leftButtonSelection.isClicked(mousePos));
         rightButtonSelection.setHovered(rightButtonSelection.isClicked(mousePos));
     } else if (currentState == State::CONTROLS) {
+        backButton.setHovered(backButton.isClicked(mousePos));
+    } else if (currentState == State::LEADERBOARD) {
         backButton.setHovered(backButton.isClicked(mousePos));
     } else if (currentState == State::LOBBY) {
         paramButton.setHovered(paramButton.isClicked(mousePos));
@@ -947,6 +957,27 @@ bool GameManager::connectToServer(const std::string& serverIP, unsigned short po
         signature.set(networkManager->mediator->getComponentType<Engine::Components::Animation>());
         networkManager->mediator->setSystemSignature<Engine::Systems::Animate>(signature);
     }
+
+    std::shared_ptr<Engine::NetworkManager> netMgrCopy = networkManager;
+    networkManager->mediator->addEventListener(static_cast<Engine::EventId>(Engine::EventsIds::ENEMY_DESTROYED),
+        [netMgrCopy](Engine::Event &event) {
+            try {
+                int scoreValue = event.getParam<int>(1);
+
+                uint32_t localPlayerId = netMgrCopy->player_id;
+                for (uint32_t entity = 0; entity < MAX_ENTITIES; ++entity) {
+                    if (netMgrCopy->mediator->hasComponent<Engine::Components::PlayerInfo>(entity)) {
+                        auto &playerInfo = netMgrCopy->mediator->getComponent<Engine::Components::PlayerInfo>(entity);
+                        if (playerInfo.player_id == localPlayerId) {
+                            playerInfo.score += scoreValue;
+                            break;
+                        }
+                    }
+                }
+            } catch (const std::exception &e) {
+                std::cerr << "Failed to process ENEMY_DESTROYED event: " << e.what() << std::endl;
+            }
+        });
 
     // TEMP
     networkManager->sendHello(UsernameGame, 12345);
@@ -1221,6 +1252,8 @@ void GameManager::gameDemo(sf::RenderWindow &window)
 
     uint32_t current_player_id = 0;
     bool is_player_id_set = false;
+    bool victorySaved = false;
+    bool scoreSaved = false;
 
     while (renderer->isWindowOpen()) {
         frame_start_time = std::chrono::high_resolution_clock::now();
@@ -1377,6 +1410,15 @@ void GameManager::gameDemo(sf::RenderWindow &window)
                     audio_player->unloadAudio(currentPlayingMusicId);
                     currentPlayingMusicId.clear();
                 }
+                if (!victorySaved) {
+                    int finalScore = 0;
+                    if (player_control_system && is_player_id_set) {
+                        finalScore = player_control_system->getLocalPlayerScore(networkManager);
+                    }
+                    trophy.saveScore(UsernameGame, finalScore);
+                    victorySaved = true;
+                }
+                
                 float winW = static_cast<float>(renderer->getWindowWidth());
                 float winH = static_cast<float>(renderer->getWindowHeight());
                 Engine::Utils::Rect rect(0.0f, 0.0f, winW, winH);
@@ -1385,6 +1427,11 @@ void GameManager::gameDemo(sf::RenderWindow &window)
                 float textX = winW / 2.0f - 200.0f;
                 float textY = winH / 2.0f - 24.0f;
                 renderer->drawText("basic", "Winner", textX, textY, bigSize, 0xFFFFFFFF);
+                
+                if (player_control_system && is_player_id_set) {
+                    int finalScore = player_control_system->getLocalPlayerScore(networkManager);
+                    renderer->drawText("basic", "Final Score: " + std::to_string(finalScore), winW / 2.0f - 150.0f, winH / 2.0f + 30.0f, 32, 0xFFFF00FF);
+                }
             }
         }
         if (player_control_system && !is_player_id_set) {
@@ -1400,13 +1447,25 @@ void GameManager::gameDemo(sf::RenderWindow &window)
                 if (localHealth >= 0) {
                     renderer->drawText("basic", "Lives " + std::to_string(localHealth), 10.0f, 30.0f, 20, 0xFFFFFFFF);
                 }
+                int localScore = player_control_system->getLocalPlayerScore(networkManager);
+                renderer->drawText("basic", "Score: " + std::to_string(localScore), 10.0f, 55.0f, 20, 0xFFFFFFFF);
             } else {
+                if (!scoreSaved) {
+                    int finalScore = player_control_system->getLocalPlayerScore(networkManager);
+                    trophy.saveScore(UsernameGame, finalScore);
+                    scoreSaved = true;
+                }
+                
                 renderer->drawText("basic", "GAME OVER", 30.0f, 100.0f, 80, 0xFFFFFFFF);
                 float game_over_time = player_control_system->getGameOverTime();
-                renderer->drawText("basic", "Returning to menu..." + std::to_string(static_cast<int>(game_over_time)), 30.0f, 200.0f, 20, 0xFFFFFFFF);
+                int finalScore = player_control_system->getLocalPlayerScore(networkManager);
+                renderer->drawText("basic", "Final Score: " + std::to_string(finalScore), 30.0f, 190.0f, 30, 0xFFFF00FF);
+                renderer->drawText("basic", "Returning to menu..." + std::to_string(static_cast<int>(game_over_time)), 30.0f, 230.0f, 20, 0xFFFFFFFF);
                 
                 if (game_over_time >= 5.0f) {
                     player_control_system->resetGameOver();
+                    scoreSaved = false;
+                    trophy.loadScores();
                     return;
                 }
             }

@@ -16,6 +16,7 @@ namespace Engine {
             uint32_t player_id;
             int health;
             int max_health;
+            int score;
         } PlayerInfo;
     };
 };

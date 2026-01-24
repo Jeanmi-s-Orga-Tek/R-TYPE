@@ -47,6 +47,7 @@ namespace Engine {
                         if (player_info.player_id == networkManager->player_id) {
                             local_player_exists = true;
                             local_player_has_ever_existed = true;
+                            last_known_score = player_info.score;
                             break;
                         }
                     }
@@ -66,6 +67,7 @@ namespace Engine {
                         uint32_t player_id = player_info.player_id;
 
                         if (player_id == networkManager->player_id) {
+                            last_known_score = player_info.score;
                             if (player_info.health <= 0 && !game_over_state) {
                                 game_over_state = true;
                                 game_over_time = 0.0f;
@@ -202,6 +204,7 @@ namespace Engine {
                     game_over_state = false;
                     game_over_time = 0.0f;
                     local_player_has_ever_existed = false;
+                    last_known_score = 0;
                 }
 
                 int getCurrentPlayerHealth(std::shared_ptr<NetworkManager> networkManager) const {
@@ -234,6 +237,23 @@ namespace Engine {
                     return (-1);
                 }
 
+                int getLocalPlayerScore(std::shared_ptr<NetworkManager> networkManager) const {
+                    std::shared_ptr<Engine::Mediator> mediator = networkManager->mediator;
+                    uint32_t localPlayerId = networkManager->player_id;
+                    for (const auto &entity : entities) {
+                        if (!mediator->hasComponent<Components::PlayerInfo>(entity))
+                            continue;
+                        const auto &player_info = mediator->getComponent<Components::PlayerInfo>(entity);
+                        if (player_info.player_id == localPlayerId) {
+                            return (player_info.score);
+                        }
+                    }
+                    if (game_over_state) {
+                        return last_known_score;
+                    }
+                    return (0);
+                }
+
             private:
                 // std::bitset<5> buttons {};
                 std::function<void(float, float)> playerProjectileCreator;
@@ -243,6 +263,7 @@ namespace Engine {
                 float game_over_time = 0.0f;
                 uint32_t current_player_id = 0;
                 bool local_player_has_ever_existed = false;
+                mutable int last_known_score = 0;
         };
     };
 };

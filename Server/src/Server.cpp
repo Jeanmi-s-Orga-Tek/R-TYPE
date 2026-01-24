@@ -269,7 +269,7 @@ void RTypeServer::Server::createPlayer(float x, float y, uint32_t assigned_playe
     player_sprite.sprite_name[player_sprite.sprite_name.size() - 1] = '\0';
     player_sprite.frame_nb = 1;
     mediator->addComponent(entity, player_sprite);
-    const Engine::Components::PlayerInfo player_info = {.player_id = assigned_player_id, .health = 5, .max_health = 5};
+    const Engine::Components::PlayerInfo player_info = {.player_id = assigned_player_id, .health = 5, .max_health = 5, .score = 0};
     mediator->addComponent(entity, player_info);
     const Engine::Components::ShootingCooldown player_cooldown = {.cooldown_time = 5, .cooldown = 0};
     mediator->addComponent(entity, player_cooldown);
@@ -506,6 +506,14 @@ void RTypeServer::Server::handleEnemyDestroyed(Engine::Event &event)
         int score = event.getParam<int>(1);
 
         (void)enemy;
+
+        for (const auto &player_entity : player_control_system->entities) {
+            if (mediator->hasComponent<Engine::Components::PlayerInfo>(player_entity)) {
+                auto &playerInfo = mediator->getComponent<Engine::Components::PlayerInfo>(player_entity);
+                playerInfo.score += score;
+                networkManager->sendComponent<Engine::Components::PlayerInfo>(player_entity, playerInfo);
+            }
+        }
 
         enemies_killed += 1;
         std::cout << "Enemy destroyed. Kills: " << enemies_killed << " / " << enemies_to_next_level << std::endl;
