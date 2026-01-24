@@ -958,27 +958,6 @@ bool GameManager::connectToServer(const std::string& serverIP, unsigned short po
         networkManager->mediator->setSystemSignature<Engine::Systems::Animate>(signature);
     }
 
-    std::shared_ptr<Engine::NetworkManager> netMgrCopy = networkManager;
-    networkManager->mediator->addEventListener(static_cast<Engine::EventId>(Engine::EventsIds::ENEMY_DESTROYED),
-        [netMgrCopy](Engine::Event &event) {
-            try {
-                int scoreValue = event.getParam<int>(1);
-
-                uint32_t localPlayerId = netMgrCopy->player_id;
-                for (uint32_t entity = 0; entity < MAX_ENTITIES; ++entity) {
-                    if (netMgrCopy->mediator->hasComponent<Engine::Components::PlayerInfo>(entity)) {
-                        auto &playerInfo = netMgrCopy->mediator->getComponent<Engine::Components::PlayerInfo>(entity);
-                        if (playerInfo.player_id == localPlayerId) {
-                            playerInfo.score += scoreValue;
-                            break;
-                        }
-                    }
-                }
-            } catch (const std::exception &e) {
-                std::cerr << "Failed to process ENEMY_DESTROYED event: " << e.what() << std::endl;
-            }
-        });
-
     // TEMP
     networkManager->sendHello(UsernameGame, 12345);
 
