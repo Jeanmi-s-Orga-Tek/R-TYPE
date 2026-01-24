@@ -124,7 +124,7 @@ GameManager::GameManager(Engine::Utils::Vec2UInt windowSize, const std::string &
     rightButtonSelection = Button(sf::Vector2f(mid_window_x - 50, windowSize.y + 50), sf::Vector2f(100, 40), ">", font);
     applyButtonLocker = Button(sf::Vector2f(mid_window_x - 50, windowSize.y - 200), sf::Vector2f(100, 40), "Apply", font);
 
-    leaderboard = Button(sf::Vector2f(mid_window_x - 350, windowSize.y - 100), sf::Vector2f(200, 50), "Leaderboard", font);
+    // leaderboard = Button(sf::Vector2f(mid_window_x - 350, windowSize.y - 100), sf::Vector2f(200, 50), "Leaderboard", font);
     editorButton = Button(sf::Vector2f(mid_window_x - 120, windowSize.y - 100), sf::Vector2f(200, 50), "Editor", font);
     trophy.leaderboardRectangle.setSize(sf::Vector2f(mid_window_x, mid_window_y + 150));
     trophy.leaderboardRectangle.setPosition(sf::Vector2f(mid_window_x - 200, mid_window_y - 200));
@@ -255,8 +255,8 @@ void GameManager::updatePositions(Engine::Utils::Vec2UInt windowSize)
                                                sf::Vector2f(100, 40));
     applyButtonLocker.updatePositionAndSize(sf::Vector2f(mid_window_y - 50, windowSize.y - 100),
                                             sf::Vector2f(100, 40));
-    leaderboard.updatePositionAndSize(sf::Vector2f(50,  100),
-                                            sf::Vector2f(125, 40));
+    // leaderboard.updatePositionAndSize(sf::Vector2f(50,  100),
+    //                                         sf::Vector2f(125, 40));
     editorButton.updatePositionAndSize(sf::Vector2f(50, 160),
                                             sf::Vector2f(125, 40));
     trophy.leaderboardRectangle.setPosition(sf::Vector2f(mid_window_x - 200,mid_window_y - 200));
@@ -433,7 +433,7 @@ void GameManager::render(sf::RenderWindow& window) {
     } else if (currentState == State::MENU) {
         paramButton.updatePositionAndSize(sf::Vector2f(50, window.getSize().y - 100), sf::Vector2f(125, 40));
         paramButton.draw(window);
-        leaderboard.draw(window);
+        // leaderboard.draw(window);
         editorButton.draw(window);
         if (isChooseMode) {
             soloButton.draw(window);
@@ -576,7 +576,7 @@ void GameManager::activateEditor(sf::RenderWindow& window)
     statusText.setString("");
     statusText.setFillColor(sf::Color::Yellow);
     paramButton.setHovered(false);
-    leaderboard.setHovered(false);
+    // leaderboard.setHovered(false);
     editorButton.setHovered(false);
 }
 
@@ -650,11 +650,11 @@ void GameManager::handleMouseClick(sf::Event& event, sf::RenderWindow& window) {
         } else {
             isChooseMode = false;
         }
-        if (leaderboard.isClicked(mousePos)) {
-            currentState = State::LEADERBOARD;
-            updateStatusTextPosition(true);
-            statusText.setString("");
-        }
+        // if (leaderboard.isClicked(mousePos)) {
+        //     currentState = State::LEADERBOARD;
+        //     updateStatusTextPosition(true);
+        //     statusText.setString("");
+        // }
         if (editorButton.isClicked(mousePos)) {
             #ifndef _WIN32
             activateEditor(window);
@@ -784,7 +784,7 @@ void GameManager::handleMouseMove(sf::RenderWindow& window)
             trioButton.setHovered(trioButton.isClicked(mousePos));
             squadButton.setHovered(squadButton.isClicked(mousePos));
         }
-        leaderboard.setHovered(leaderboard.isClicked(mousePos));
+        // leaderboard.setHovered(leaderboard.isClicked(mousePos));
         lockerButton.setHovered(lockerButton.isClicked(mousePos));
         modeButton.setHovered(modeButton.isClicked(mousePos));
         playButton.setHovered(playButton.isClicked(mousePos));
